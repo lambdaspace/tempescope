@@ -18,6 +18,8 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+#include <ESP8266WiFi.h>
+
 #include "Weather.h"
 #include "PinController.h"
 #include "LightController.h"
@@ -26,13 +28,17 @@
 #include "MistStateController.h"
 #include "LightStateController.h"
 
+// Change these values
+#define WIFI_SSID "**********"
+#define WIFI_PASS "**********"
+
 //pins
-#define PIN_R 5
-#define PIN_G 6
-#define PIN_B 9
-#define PIN_MIST 12
-#define PIN_FAN 7
-#define PIN_PUMP 2
+#define PIN_R D0
+#define PIN_G D1
+#define PIN_B D2
+#define PIN_MIST D5
+#define PIN_FAN D6
+#define PIN_PUMP D7
 
 /*****************
 Low level controllers
@@ -53,9 +59,8 @@ LightStateController *lightStateController;
 Weather *currentWeather;
 
 void setup(){
-  Serial.begin(9600);
-  
-  //Serial.println("Serial begin");
+  Serial.begin(115200);
+  Serial.println("Starting up ...");
   
   //low level controllers
   mistController=new PinController(PIN_MIST);
@@ -82,14 +87,11 @@ void setup(){
    lightController->setRGB(0,0,0);
    delay(30);
    }
-   
-  Serial.println("Hello, serial?");
- 
+  
   //state controllers
   fanStateController=new FanStateController(fanController);
   pumpStateController=new PumpStateController(pumpController);
   mistStateController=new MistStateController(mistController);
-  //Serial.println("11x");
   lightStateController=new LightStateController(lightController);
   
   //do nothing to start up
@@ -98,7 +100,15 @@ void setup(){
   delay(1000);
   lightController->setRGB(0,0,0);
   
-  Serial.println("Setup ende");
+  Serial.printf("Connecting to %s ...\n", WIFI_SSID);
+  
+  WiFi.begin(WIFI_SSID, WIFI_PASS);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  
+  Serial.println("\n Connected!");
 }
 
 int freeRam () {
