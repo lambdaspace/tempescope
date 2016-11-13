@@ -19,6 +19,8 @@
 */
 
 #include <ESP8266WiFi.h>
+#include <NtpClientLib.h>
+#include <Time.h>
 
 #include "Weather.h"
 #include "PinController.h"
@@ -109,6 +111,10 @@ void setup(){
   }
   
   Serial.println("\n Connected!");
+  Serial.println("Synchronising clock...");
+
+  NTP.begin();
+  NTP.setInterval(604800);
 }
 
 int freeRam () {
