@@ -18,6 +18,12 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+#include <ESP8266WiFi.h>
+#include <NtpClientLib.h>
+#include <ESP8266HTTPClient.h>
+#include <ArduinoJson.h>
+#include <Time.h>
+
 #include "Weather.h"
 #include "PinController.h"
 #include "LightController.h"
@@ -26,13 +32,19 @@
 #include "MistStateController.h"
 #include "LightStateController.h"
 
+// Change these values
+#define WIFI_SSID "**********"
+#define WIFI_PASS "**********"
+#define OWM_API_KEY "**********"
+#define CITY_ID "734077"
+
 //pins
-#define PIN_R 5
-#define PIN_G 6
-#define PIN_B 9
-#define PIN_MIST 12
-#define PIN_FAN 7
-#define PIN_PUMP 2
+#define PIN_R D0
+#define PIN_G D1
+#define PIN_B D2
+#define PIN_MIST D5
+#define PIN_FAN D6
+#define PIN_PUMP D7
 
 /*****************
 Low level controllers
@@ -53,9 +65,8 @@ LightStateController *lightStateController;
 Weather *currentWeather;
 
 void setup(){
-  Serial.begin(9600);
-  
-  //Serial.println("Serial begin");
+  Serial.begin(115200);
+  Serial.println("Starting up ...");
   
   //low level controllers
   mistController=new PinController(PIN_MIST);
@@ -82,14 +93,11 @@ void setup(){
    lightController->setRGB(0,0,0);
    delay(30);
    }
-   
-  Serial.println("Hello, serial?");
- 
+  
   //state controllers
   fanStateController=new FanStateController(fanController);
   pumpStateController=new PumpStateController(pumpController);
   mistStateController=new MistStateController(mistController);
-  //Serial.println("11x");
   lightStateController=new LightStateController(lightController);
   
   //do nothing to start up
@@ -98,7 +106,19 @@ void setup(){
   delay(1000);
   lightController->setRGB(0,0,0);
   
-  Serial.println("Setup ende");
+  Serial.printf("Connecting to %s ...\n", WIFI_SSID);
+  
+  WiFi.begin(WIFI_SSID, WIFI_PASS);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  
+  Serial.println("\n Connected!");
+  Serial.println("Synchronising clock...");
+
+  NTP.begin();
+  NTP.setInterval(604800);
 }
 
 int freeRam () {
@@ -154,86 +174,72 @@ void doWeather(Weather weather){
   }
 }
 
-
-byte readBuf[21];
-int readPacket(byte buf[],int length){
-  int idx=0;
-  long tEnd=millis()+1000;
-  while(millis()<tEnd && idx<length){
-    if(Serial.available()>0){
-      int k=Serial.read();
-      buf[idx++]=k;
-    }
-  }
-  return idx==length;
-}
-
-void loop(){
-
-  
+void loop() {
   //delay(300);
   //Serial.print("state ");
   //Serial.println(lightStateController->state());
   //delay(1000);
   //Serial.println("RAM: " + String(freeRam(), DEC));
-  if (Serial.available()>0)
-  {
-    char func=Serial.read();
-    //Serial.write(func);
-    Serial.print(func);
-    boolean err=0;
-    
-    switch(func){
-      case 'C':
-        //connecting!
-        
-        //read and ignore (C)ONNECT
-        readPacket(readBuf, 7);
-        break;
-      case 'D':
-        //disconnecting!
-        //read and ignore (D)ISCONNECT
-        readPacket(readBuf, 10);
-        break;
-      case 'g':
-        //set rgb led
-         //play single weather
-        if(readPacket(readBuf, 6)){
-          double pNoon= readBuf[0]/255.;
-          int weatherType= readBuf[1];
-          int lightning=readBuf[2];
-          double red= readBuf[3]/255.;
-          double green= readBuf[4]/255.;
-          double blue= readBuf[5]/255.0;
-          //Serial.println(pNoon);
-          //Serial.println(weatherType);
-          //Serial.println(lightning);
-          
-          Weather newWeather(pNoon, (WeatherType)weatherType, lightning, red, green, blue);
-          
-          newWeather.validateAndFix();
-          newWeather.print();
-    
+
+  String url = "http://api.openweathermap.org/data/2.5/weather?id=";
+  url += CITY_ID;
+  url += "&APPID=";
+  url += OWM_API_KEY;
+
+  HTTPClient apiClient;
+  apiClient.begin(url);
+
+  int httpCode = apiClient.GET();
+
+  if (httpCode == 200) {
+    WiFiClient *stream = apiClient.getStreamPtr();
+    DynamicJsonBuffer jsonBuffer;
+
+    while(apiClient.connected()) {
+      if (stream->available()) {
+        String response = stream->readStringUntil('\r');
+        response.trim();
+
+        JsonObject& root = jsonBuffer.parseObject(response.c_str());
+
+        if (root.success()) {
+          JsonObject& sys = root["sys"];
+          time_t sunrise = sys["sunrise"];
+          time_t sunset = sys["sunset"];
+          time_t t = now();
+          int pNoon = t > sunrise && t < sunset;
+
+          int id = root["weather"]["id"];
+          WeatherType weatherType;
+          boolean lightning = false;
+
+          if (id == 800) {
+            weatherType = kClear;
+          } else if (id > 700 && id < 900) {
+            weatherType = kCloudy;
+          } else if (id >= 300 && id < 700) {
+            weatherType = kRain;
+          } else if (id >= 200 && id < 300) {
+            weatherType = kStorm;
+            lightning = true;
+          } else {
+            break;
+          }
+
+          Weather newWeather(pNoon, weatherType, lightning);
           *currentWeather = newWeather;
-          doWeather(*currentWeather);          
-          
-          //Serial.print("state ");
-          //Serial.println(lightStateController->state());
-          
-        }else{
-          err=1;
+
+          break;
+        } else {
+          Serial.println("Failed to parse API response");
         }
-        break;      
-      default:
-        err=1;
+      }
     }
-    if(err){
-      while(Serial.available()>0) //kill everything in Socket
-        Serial.read();
-    }
-  } 
+  } else {
+    Serial.println("API request failed");
+  }
+  apiClient.end();
   
   doWeather(*currentWeather);
-  //digitalWrite(11,HIGH);
-  //analogWrite(11,55); 
+  delay(900000);
 }
