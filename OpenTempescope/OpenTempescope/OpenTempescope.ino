@@ -209,7 +209,8 @@ void loop() {
           time_t t = now();
           int pNoon = t > sunrise && t < sunset;
 
-          int id = root["weather"]["id"];
+          String ids = root["weather"][0]["id"];
+          int id = ids.toInt();
           WeatherType weatherType;
           boolean lightning = false;
 
