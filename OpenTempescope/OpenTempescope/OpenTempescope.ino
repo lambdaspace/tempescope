@@ -114,10 +114,17 @@ void setup(){
     Serial.print(".");
   }
   
-  Serial.println("\n Connected!");
+  Serial.println("\nConnected!");
   Serial.println("Synchronising clock...");
 
   NTP.begin();
+  while (NTP.getLastNTPSync() == 0) {
+    NTP.getTime();
+    delay(1000);
+    Serial.print(".");
+  }
+
+  Serial.println("\nClock synchronized!");
   NTP.setInterval(604800);
 }
 
@@ -206,7 +213,7 @@ void loop() {
           JsonObject& sys = root["sys"];
           time_t sunrise = sys["sunrise"];
           time_t sunset = sys["sunset"];
-          time_t t = now();
+          time_t t = NTP.getTime();
           int pNoon = t > sunrise && t < sunset;
 
           String ids = root["weather"][0]["id"];
