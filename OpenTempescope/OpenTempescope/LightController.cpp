@@ -34,7 +34,7 @@ LightController::LightController(int pinR, int pinG, int pinB){
     analogWrite(this->pinG,0);
     analogWrite(this->pinB,0);
 }
-void LightController::setRGB(int r,int g,int b){
+void LightController::setRGB(uint16_t r, uint16_t g, uint16_t b) {
   if(r!= this->_r){
      analogWrite(this->pinR,r);
      this->_r=r;

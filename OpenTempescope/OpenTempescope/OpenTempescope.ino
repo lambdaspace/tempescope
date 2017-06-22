@@ -73,33 +73,33 @@ void setup(){
   fanController=new PinController(PIN_FAN);
   pumpController=new PinController(PIN_PUMP);
   lightController=new LightController(PIN_R,PIN_G,PIN_B);
-  
-  //initializing 
+
+  //initializing
   for(int i=0;i<3;i++){
-   lightController->setRGB(255,0,0);
+   lightController->setRGB(1023,0,0);
    delay(80);
    lightController->setRGB(0,0,0);
    delay(30);
    }
   for(int i=0;i<3;i++){
-      lightController->setRGB(0,255,0);
+   lightController->setRGB(0,1023,0);
    delay(80);
    lightController->setRGB(0,0,0);
    delay(30);
    }
   for(int i=0;i<3;i++){
-      lightController->setRGB(0,0,255);
+   lightController->setRGB(0,0,1023);
    delay(80);
    lightController->setRGB(0,0,0);
    delay(30);
    }
-  
+
   //state controllers
   fanStateController=new FanStateController(fanController);
   pumpStateController=new PumpStateController(pumpController);
   mistStateController=new MistStateController(mistController);
   lightStateController=new LightStateController(lightController);
-  
+
   //do nothing to start up
   currentWeather = new Weather(0,kClear,false);
   doWeather(*currentWeather);
@@ -107,13 +107,13 @@ void setup(){
   lightController->setRGB(0,0,0);
   
   Serial.printf("Connecting to %s ...\n", WIFI_SSID);
-  
+
   WiFi.begin(WIFI_SSID, WIFI_PASS);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
-  
+
   Serial.println("\nConnected!");
   Serial.println("Synchronising clock...");
 
@@ -143,7 +143,7 @@ void doWeather(Weather weather){
     lightStateController->setPNoon(weather.pNoon());
     lightStateController->doAction(ACTION_LIGHT_LNG_OFF);
   }
-  
+
   switch(weather.weatherType()){
     case kClear:
     {
