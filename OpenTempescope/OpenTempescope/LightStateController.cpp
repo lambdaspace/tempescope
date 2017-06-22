@@ -28,15 +28,15 @@ LightStateController::LightStateController(LightController* lightController){
   this->lightController=lightController;
   setState(STATE_LIGHT_SUN);
 }
-int mapInt(float p,float origMin, float toMin,float from,float to){
+uint16_t mapInt(float p, float origMin, float toMin, float from, float to) {
   p= (p-origMin)/(toMin-origMin);
-  return (int)(from+p*(to-from));
+  return (uint16_t)(from+p*(to-from));
 }
 void LightStateController::showSunlight(){
   if(_pNoon<0.5){
-    lightController->setRGB( 
-                  mapInt(_pNoon,0,0.5,0,255),
-                  mapInt(_pNoon,0,0.5,0,10),
+    lightController->setRGB(
+                  mapInt(_pNoon,0,0.5,0,1023),
+                  mapInt(_pNoon,0,0.5,0,40),
                   mapInt(_pNoon,0,0.5,0,0));
                   /*
       Serial.print("sun <0.5 R:");
@@ -55,9 +55,9 @@ void LightStateController::showSunlight(){
 //                  mapInt(_pNoon,0.5,1,10,160),
 //                  mapInt(_pNoon,0.5,1,0,255));
     lightController->setRGB(
-                  mapInt(_pNoon,0.5,1,250,20),
-                  mapInt(_pNoon,0.5,1,10,180),
-                  mapInt(_pNoon,0.5,1,0,255));
+                  mapInt(_pNoon,0.5,1,1000,80),
+                  mapInt(_pNoon,0.5,1,40,720),
+                  mapInt(_pNoon,0.5,1,0,1023));
                   /*
       Serial.print("sun >0.5 R:");
       Serial.print(mapInt(_pNoon,0.5,1,250,20));
@@ -69,7 +69,7 @@ void LightStateController::showSunlight(){
   }
 }
 
-int LightStateController::showRGBlight(){
+uint16_t LightStateController::showRGBlight() {
   //lightController->setRGB(0,0,255);
 //    lightController->setRGB(
 //      mapInt(_pRed,0,1,0,255),
@@ -78,10 +78,10 @@ int LightStateController::showRGBlight(){
 //      );
 
       lightController->setRGB(
-      mapInt(_pRed,0,1,0,255),
-      mapInt(_pGreen,0,1,0,255),
-      mapInt(_pBlue,0,1,0,255)
-      
+      mapInt(_pRed,0,1,0,1023),
+      mapInt(_pGreen,0,1,0,1023),
+      mapInt(_pBlue,0,1,0,1023)
+
       );
       /*
       Serial.print("RGB: R:");
@@ -91,7 +91,7 @@ int LightStateController::showRGBlight(){
       Serial.print(" B:");
       Serial.println(mapInt(_pBlue,0,1,0,255));
       */
-      return (int)(_pBlue*255);
+      return (uint16_t)(_pBlue*1023);
 }
 
 
@@ -102,20 +102,19 @@ void LightStateController::setPNoon(float pNoon){
     }
 }
 
-int LightStateController::setRGB(float red, float green, float blue){
+uint16_t LightStateController::setRGB(float red, float green, float blue) {
   this->_pRed=red;
   this->_pGreen=green;
   this->_pBlue=blue;
     setState(STATE_LIGHT_RGB);
      return showRGBlight();
-   
 }
 
 
 
 void LightStateController::stateChangedTo(int state){
   if(state==STATE_LIGHT_LNG_H){
-      lightController->setRGB(140,100,255); //and turn on white light
+      lightController->setRGB(560,400,1023); //and turn on white light
       setStateTTL((rand()%100)+0); //on for 500~2000 millis
   }
   else if(state==STATE_LIGHT_LNG_L){
@@ -129,7 +128,6 @@ void LightStateController::stateChangedTo(int state){
     showRGBlight();
     setStateTTL(-1);
   }
-  
 }
 void LightStateController::transition(int state,int action){
   switch(state){

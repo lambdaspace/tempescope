@@ -35,15 +35,15 @@ class LightStateController: public StateController{
   public:
     LightStateController(LightController *lightController);
     void setPNoon(float pNoon);
-    int setRGB(float pRed, float pGreen, float pBlue);
+    uint16_t setRGB(float pRed, float pGreen, float pBlue);
   protected:
     void stateChangedTo(int state);
     void transition(int state,int action);
     void stateTimedOut(int state);
   private:
     void showSunlight();
-    int showRGBlight();
-    
+    uint16_t showRGBlight();
+
     LightController *lightController;
     float _pNoon;
     float _pRed;

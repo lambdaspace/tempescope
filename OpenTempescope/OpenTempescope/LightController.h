@@ -24,10 +24,10 @@
 class LightController{
   public:
     LightController(int pinR, int pinG, int pinB);
-    void setRGB(int r,int g, int b);
+    void setRGB(uint16_t r, uint16_t g, uint16_t b);
   private:
     int pinR, pinG, pinB;
-    int _r,_g,_b;
+    uint16_t _r,_g,_b;
 };
 
 #endif
