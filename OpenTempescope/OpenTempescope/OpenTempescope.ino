@@ -45,6 +45,9 @@
 #define PIN_MIST D5
 #define PIN_FAN D6
 #define PIN_PUMP D7
+#define PIN_DEBUG D8
+
+void test_mode();
 
 /*****************
 Low level controllers
@@ -67,7 +70,10 @@ Weather *currentWeather;
 void setup(){
   Serial.begin(115200);
   Serial.println("Starting up ...");
-  
+
+  // Set debug pin as an input with a pullup resistor
+  pinMode(PIN_DEBUG, INPUT_PULLUP);
+
   //low level controllers
   mistController=new PinController(PIN_MIST);
   fanController=new PinController(PIN_FAN);
@@ -105,7 +111,13 @@ void setup(){
   doWeather(*currentWeather);
   delay(1000);
   lightController->setRGB(0,0,0);
-  
+
+  // Check if we must pause the setup end go into test mode
+  if (digitalRead(PIN_DEBUG) == LOW) {
+    Serial.println("Entering test mode...");
+    test_mode();
+  }
+
   Serial.printf("Connecting to %s ...\n", WIFI_SSID);
 
   WiFi.begin(WIFI_SSID, WIFI_PASS);
@@ -247,7 +259,106 @@ void loop() {
     Serial.println("API request failed");
   }
   apiClient.end();
-  
+
   doWeather(*currentWeather);
   delay(900000);
+}
+
+void test_mode() {
+  uint8_t selection;
+
+  do {
+    // Print menu
+    Serial.print("\
+      0) Continue booting\n\
+      1) Simulate weather\n\
+      2) Set light color\n\
+      Select option: \
+    ");
+
+    // Wait for user input
+    while (Serial.available() == 0) {
+      yield();
+    }
+
+    selection = Serial.parseInt();
+    Serial.println(selection);
+    switch (selection) {
+      case 0:
+        break;
+      case 1:
+      {
+        WeatherType weatherType;
+        uint8_t lightning = false;
+
+        Serial.print("\
+          1) Clear weather\n\
+          2) Rain\n\
+          3) Clouds or fog\n\
+          4) Storm\n\
+          Select option: \
+        ");
+
+        while (Serial.available() == 0) {
+          yield();
+        }
+
+        selection = Serial.parseInt();
+        Serial.println(selection);
+        switch (selection) {
+          case 1:
+            weatherType = kClear;
+            break;
+          case 2:
+            weatherType = kRain;
+            break;
+          case 3:
+            weatherType = kCloudy;
+            break;
+          case 4:
+            weatherType = kStorm;
+            lightning = true;
+            break;
+          default:
+            Serial.println("Invalid option");
+            continue;
+        }
+
+        doWeather(Weather(1, weatherType, lightning));
+        break;
+      }
+      case 2:
+      {
+        Serial.print("Insert value for red: ");
+        while (Serial.available() == 0) {
+          yield();
+        }
+        uint16_t red = Serial.parseInt();
+        Serial.println(red);
+
+        Serial.print("Insert value for green: ");
+        while (Serial.available() == 0) {
+          yield();
+        }
+        uint16_t green = Serial.parseInt();
+        Serial.println(green);
+
+        Serial.print("Insert value for blue: ");
+        while (Serial.available() == 0) {
+          yield();
+        }
+        uint16_t blue = Serial.parseInt();
+        Serial.println(blue);
+
+        if (red > 1023 || green > 10123 || blue > 1023) {
+          Serial.println("You have entered invalid values");
+        } else {
+          lightController->setRGB(red, green, blue);
+        }
+        break;
+      }
+      default:
+        Serial.println("Invalid option");
+    }
+  } while (selection != 0);
 }
