@@ -39,13 +39,13 @@
 #define CITY_ID "734077"
 
 //pins
-#define PIN_R D0
-#define PIN_G D1
-#define PIN_B D2
-#define PIN_MIST D5
-#define PIN_FAN D6
-#define PIN_PUMP D7
-#define PIN_DEBUG D8
+#define PIN_R D5
+#define PIN_G D6
+#define PIN_B D7
+#define PIN_MIST D0
+#define PIN_FAN D1
+#define PIN_PUMP D2
+#define PIN_DEBUG A0
 
 void test_mode();
 
@@ -71,8 +71,8 @@ void setup(){
   Serial.begin(115200);
   Serial.println("Starting up ...");
 
-  // Set debug pin as an input with a pullup resistor
-  pinMode(PIN_DEBUG, INPUT_PULLUP);
+  // Set debug pin as an input
+  pinMode(PIN_DEBUG, INPUT);
 
   //low level controllers
   mistController=new PinController(PIN_MIST);
@@ -113,7 +113,7 @@ void setup(){
   lightController->setRGB(0,0,0);
 
   // Check if we must pause the setup end go into test mode
-  if (digitalRead(PIN_DEBUG) == LOW) {
+  if (digitalRead(PIN_DEBUG) == HIGH) {
     Serial.println("Entering test mode...");
     test_mode();
   }
