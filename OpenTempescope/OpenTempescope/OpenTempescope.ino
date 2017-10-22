@@ -24,6 +24,7 @@
 #include <ArduinoJson.h>
 #include <Time.h>
 
+#include "config.h"
 #include "Weather.h"
 #include "PinController.h"
 #include "LightController.h"
@@ -31,12 +32,6 @@
 #include "PumpStateController.h"
 #include "MistStateController.h"
 #include "LightStateController.h"
-
-// Change these values
-#define WIFI_SSID "**********"
-#define WIFI_PASS "**********"
-#define OWM_API_KEY "**********"
-#define CITY_ID "734077"
 
 //pins
 #define PIN_R D5
