@@ -108,12 +108,12 @@ void setup(){
   lightController->setRGB(0,0,0);
 
   // Check if we must pause the setup end go into test mode
-  if (digitalRead(PIN_DEBUG) == HIGH) {
+  if (analogRead(PIN_DEBUG) > 512) {
     Serial.println("Entering test mode...");
     test_mode();
   }
 
-  Serial.printf("Connecting to %s ...\n", WIFI_SSID);
+  Serial.printf("Connecting to %s ...", WIFI_SSID);
 
   WiFi.begin(WIFI_SSID, WIFI_PASS);
   while (WiFi.status() != WL_CONNECTED) {
@@ -122,7 +122,7 @@ void setup(){
   }
 
   Serial.println("\nConnected!");
-  Serial.println("Synchronising clock...");
+  Serial.print("Synchronising clock...");
 
   NTP.begin();
   while (NTP.getLastNTPSync() == 0) {
@@ -200,6 +200,8 @@ void loop() {
   url += "&APPID=";
   url += OWM_API_KEY;
 
+  Serial.println("Sending API request");
+
   HTTPClient apiClient;
   apiClient.begin(url);
 
@@ -209,8 +211,12 @@ void loop() {
     WiFiClient *stream = apiClient.getStreamPtr();
     DynamicJsonBuffer jsonBuffer;
 
+    Serial.print("Waiting for response...");
+
     while(apiClient.connected()) {
       if (stream->available()) {
+        Serial.print("\n");
+
         String response = stream->readStringUntil('\r');
         response.trim();
 
@@ -227,6 +233,8 @@ void loop() {
           int id = ids.toInt();
           WeatherType weatherType;
           boolean lightning = false;
+
+          Serial.printf("Simulating weather for id: %d\n", id);
 
           if (id == 800) {
             weatherType = kClear;
@@ -248,15 +256,22 @@ void loop() {
         } else {
           Serial.println("Failed to parse API response");
         }
+      } else {
+        Serial.print(".");
+        delay(500);
       }
     }
   } else {
     Serial.println("API request failed");
+    Serial.printf("Got code: %d\n", httpCode);
   }
   apiClient.end();
 
   doWeather(*currentWeather);
-  delay(900000);
+
+  for (int i = 0; i < 9000; i++) {
+    delay(1000);
+  }
 }
 
 void test_mode() {
