@@ -249,9 +249,7 @@ void loop() {
             break;
           }
 
-          Weather newWeather(pNoon, weatherType, lightning);
-          *currentWeather = newWeather;
-
+          *currentWeather = Weather(pNoon, weatherType, lightning);
           break;
         } else {
           Serial.println("Failed to parse API response");
@@ -267,10 +265,10 @@ void loop() {
   }
   apiClient.end();
 
-  doWeather(*currentWeather);
-
   for (int i = 0; i < 9000; i++) {
-    delay(1000);
+    yield();
+    doWeather(*currentWeather);
+    delay(100);
   }
 }
 
@@ -289,6 +287,8 @@ void test_mode() {
     // Wait for user input
     while (Serial.available() == 0) {
       yield();
+      doWeather(*currentWeather);
+      delay(10);
     }
 
     selection = Serial.parseInt();
@@ -311,6 +311,8 @@ void test_mode() {
 
         while (Serial.available() == 0) {
           yield();
+          doWeather(*currentWeather);
+          delay(10);
         }
 
         selection = Serial.parseInt();
@@ -334,7 +336,8 @@ void test_mode() {
             continue;
         }
 
-        doWeather(Weather(1, weatherType, lightning));
+        *currentWeather = Weather(1, weatherType, lightning);
+        doWeather(*currentWeather);
         break;
       }
       case 2:
@@ -342,6 +345,8 @@ void test_mode() {
         Serial.print("Insert value for red: ");
         while (Serial.available() == 0) {
           yield();
+          doWeather(*currentWeather);
+          delay(10);
         }
         uint16_t red = Serial.parseInt();
         Serial.println(red);
@@ -349,6 +354,8 @@ void test_mode() {
         Serial.print("Insert value for green: ");
         while (Serial.available() == 0) {
           yield();
+          doWeather(*currentWeather);
+          delay(10);
         }
         uint16_t green = Serial.parseInt();
         Serial.println(green);
@@ -356,6 +363,8 @@ void test_mode() {
         Serial.print("Insert value for blue: ");
         while (Serial.available() == 0) {
           yield();
+          doWeather(*currentWeather);
+          delay(10);
         }
         uint16_t blue = Serial.parseInt();
         Serial.println(blue);
